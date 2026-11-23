@@ -10,9 +10,9 @@ Wayland requires every frame to be drawn explicitly: ``paintGL`` always
 calls ``glClear`` first to avoid showing stale GPU memory.
 
 Navigation:
-- Middle-button drag: orbit
-- Shift + Middle-button drag: pan
-  (the two swap with Preferences ▸ "Middle-button drag pans")
+- Middle-button drag: orbit (pan in the Alternate preset)
+- Right-button drag: pan (orbit in the Alternate preset)
+- Shift + middle-button drag: swap the middle-button action
 - Wheel: zoom
 - P: toggle perspective / parallel projection
 
@@ -402,6 +402,8 @@ class Viewport(InteractionMixin, ValueInputMixin, SnappingMixin, PickingMixin,
         self._last_pos = None
         self._pan_mode = False
         self._middle_drag_active = False
+        self._right_drag_start = None
+        self._right_drag_active = False
         # The left button pressed during a wheel-drag pans: the drag's
         # mode before it (True = it was already a Shift pan), else None.
         # Its release never reaches the tool, even after the wheel's.

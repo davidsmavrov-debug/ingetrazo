@@ -13,7 +13,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
 from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication, QTabWidget, QWidget
 
 _inst = QApplication.instance()
 if _inst is None:
@@ -72,7 +72,7 @@ def test_ok_writes_the_settings(settings_file):
     dlg._backup.setChecked(False)
     dlg._invert.setChecked(True)
     dlg._invert_orbit.setChecked(True)
-    dlg._middle_pans.setChecked(True)
+    dlg._mouse_preset.setCurrentIndex(dlg._mouse_preset.findData("alternate"))
     dlg._look_sens.setValue(40)
     dlg._msaa.setCurrentIndex(dlg._msaa.findData(8))
     dlg.accept()
@@ -87,7 +87,7 @@ def test_ok_writes_the_settings(settings_file):
     assert st.value("General/backup") == "0"
     assert st.value("nav/invert_wheel") == "1"
     assert st.value("nav/invert_orbit_y") == "1"
-    assert st.value("nav/middle_drag_pans") == "1"
+    assert st.value("nav/mouse_preset") == "alternate"
     assert int(st.value("walk/look_sensitivity")) == 40
     assert int(st.value("display/msaa")) == 8
     # The live pieces reach the viewport immediately.
@@ -266,3 +266,22 @@ def test_the_graphics_server_is_asked_only_where_there_is_a_choice(
     assert dlg._platform.isHidden()
     dlg.accept()                       # saving still goes through the box
     assert _fresh(settings_file).value("general/platform", "auto") == "auto"
+
+
+def test_mouse_preset_position_persistence_and_defaults(settings_file):
+    win = _Win()
+    dlg = PreferencesDialog(win)
+    tabs = dlg.findChild(QTabWidget)
+    at = next(i for i in range(tabs.count()) if tabs.tabText(i) == "3D Mouse")
+    assert tabs.tabText(at + 1) == "Mouse Navigation"
+    assert dlg._mouse_preset.count() == 2
+    assert dlg._mouse_preset.currentData() == "ingetrazo"
+
+    dlg._mouse_preset.setCurrentIndex(1)
+    dlg.accept()
+    reopened = PreferencesDialog(win)
+    assert reopened._mouse_preset.currentData() == "alternate"
+    reopened.restore_defaults()
+    assert reopened._mouse_preset.currentData() == "ingetrazo"
+    reopened.accept()
+    assert _fresh(settings_file).value("nav/mouse_preset") == "ingetrazo"

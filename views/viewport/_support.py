@@ -2252,15 +2252,15 @@ def _load_invert_orbit_y() -> bool:
     return str(QSettings().value("nav/invert_orbit_y", "0")) != "0"
 
 
-def _load_middle_drag_pans() -> bool:
-    """Preferences ▸ middle-button drag pans, Shift + middle-drag orbits.
-
-    Off by default: the bare wheel-drag orbits, the classic way. This is
-    for the hands that learned the other convention in other modelers,
-    where the wheel-drag moves the view and a modifier turns it.
-    """
+def _load_middle_drag_pans(settings=None) -> bool:
+    """Resolve the mouse preset, keeping the older middle-pan preference."""
     from PySide6.QtCore import QSettings
-    return str(QSettings().value("nav/middle_drag_pans", "0")) != "0"
+    if settings is None:
+        settings = QSettings()
+    preset = settings.value("nav/mouse_preset")
+    if preset in ("ingetrazo", "alternate"):
+        return preset == "alternate"
+    return str(settings.value("nav/middle_drag_pans", "0")) != "0"
 
 
 def _load_msaa() -> int:

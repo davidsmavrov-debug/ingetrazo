@@ -312,12 +312,6 @@ class PreferencesDialog(QDialog):
                                       != "0")
         form.addRow("", self._invert_orbit)
 
-        self._middle_pans = QCheckBox(tr(
-            "Middle-button drag pans (Shift + drag orbits)"))
-        self._middle_pans.setChecked(
-            str(st.value("nav/middle_drag_pans", "0")) != "0")
-        form.addRow("", self._middle_pans)
-
         from tools.walkthrough import look_sensitivity
         self._look_sens = QSpinBox()
         self._look_sens.setRange(1, 100)
@@ -611,6 +605,30 @@ class PreferencesDialog(QDialog):
         self._ndof_save.clicked.connect(self._save_ndof_profile)
         self._ndof_reset.clicked.connect(self._reset_ndof_profile)
         tabs.addTab(_ScrollingPage(mouse3d), tr("3D Mouse"))
+
+        from views.viewport._support import _load_middle_drag_pans
+
+        mouse = QWidget()
+        mouse_form = QFormLayout(mouse)
+        self._mouse_preset = QComboBox()
+        self._mouse_preset.addItem(tr("IngeTrazo"), "ingetrazo")
+        self._mouse_preset.addItem(tr("Alternate"), "alternate")
+        self._mouse_preset.setCurrentIndex(int(_load_middle_drag_pans(st)))
+        mouse_form.addRow(tr("Preset"), self._mouse_preset)
+        gestures = QLabel()
+        gestures.setWordWrap(True)
+
+        def describe_preset(index):
+            gestures.setText(tr("Middle drag: Pan. Right drag: Orbit.") if index
+                             else tr("Middle drag: Orbit. Right drag: Pan."))
+
+        self._mouse_preset.currentIndexChanged.connect(describe_preset)
+        describe_preset(self._mouse_preset.currentIndex())
+        mouse_form.addRow(gestures)
+        common = QLabel(tr("Scroll to zoom. Right-click for the context menu."))
+        common.setWordWrap(True)
+        mouse_form.addRow(common)
+        tabs.addTab(_ScrollingPage(mouse), tr("Mouse Navigation"))
 
         # ---- Import ---------------------------------------------------------
         imp = QWidget()
@@ -1068,6 +1086,7 @@ class PreferencesDialog(QDialog):
         pick(self._figure, sf.DEFAULT_PICK)
         self._invert.setChecked(False)
         self._invert_orbit.setChecked(False)
+        pick(self._mouse_preset, "ingetrazo")
         self._look_sens.setValue(DEFAULT_LOOK_SENSITIVITY)
         pick(self._cursor_style, "tool")
         pick(self._msaa, 4)
@@ -1246,9 +1265,10 @@ class PreferencesDialog(QDialog):
         for v in viewports:
             v._invert_orbit_y = self._invert_orbit.isChecked()
 
-        st.setValue("nav/middle_drag_pans",
-                    "1" if self._middle_pans.isChecked() else "0")
-        self._window.viewport._middle_drag_pans = self._middle_pans.isChecked()
+        preset = self._mouse_preset.currentData()
+        st.setValue("nav/mouse_preset", preset)
+        for v in viewports:
+            v._middle_drag_pans = preset == "alternate"
 
         # First Person reads it on every look move: nothing to push.
         st.setValue("walk/look_sensitivity", int(self._look_sens.value()))
